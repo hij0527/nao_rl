@@ -5,8 +5,11 @@ Contains main functions for launching applications (VREP, NaoQI)
 and 'make' function for creating and opening the custom environments
 """
 
-import subprocess, time, os
+import subprocess, time, os, psutil
 import nao_rl.settings as s
+
+vrep_proc = None
+naoqi_proc = None
 
 
 def destroy_instances():
@@ -14,9 +17,19 @@ def destroy_instances():
     Destroys all the current instances of Vrep and Naoqi-bin
     """
     print "Destroying all previous VREP and NaoQI instances..."
-    subprocess.Popen('pkill vrep'.split())
-    subprocess.Popen('pkill naoqi-bin'.split())
-    time.sleep(1)
+
+    def kill_subprocess(proc):
+        if proc is None:
+            return
+        for child in psutil.Process(proc.pid).children(recursive=True):
+            child.kill()
+        proc.kill()
+        proc = None
+
+    print 'terminating vrep...'
+    kill_subprocess(vrep_proc)
+    print 'terminating naoqi...'
+    kill_subprocess(naoqi_proc)
 
 
 def start_vrep(sim_port, path, exit_after_sim=False, headless=True, verbose=False):
@@ -31,7 +44,7 @@ def start_vrep(sim_port, path, exit_after_sim=False, headless=True, verbose=Fals
             [verbose]       : suppress prompt messages
     """
 
-    command = 'bash ' + s.VREP_DIR + '/vrep.sh'  + \
+    command = s.VREP_DIR + '/vrep.sh'  + \
             ' -gREMOTEAPISERVERSERVICE_{}_TRUE_TRUE'.format(sim_port) # Start remote API at a specified port
 
     # Additional arguments
@@ -45,12 +58,10 @@ def start_vrep(sim_port, path, exit_after_sim=False, headless=True, verbose=Fals
     command += ' &'                      # Non-blocking call
 
     # Call the process and start VREP
+    global vrep_proc
     print "Launching V-REP at port {}".format(sim_port)
-    DEVNULL = open(os.devnull, 'wb')
-    if verbose:
-        subprocess.Popen(command.split())
-    else:
-        subprocess.Popen(command.split(), stdout=DEVNULL, stderr=DEVNULL)
+    STDOUT = open(os.devnull, 'wb') if not verbose else None
+    vrep_proc = subprocess.Popen(command.split(), stdout=STDOUT, stderr=STDOUT)
 
 
 def start_naoqi(ports):
@@ -66,10 +77,11 @@ def start_naoqi(ports):
 
     print '==========================================================================='
     print command
-    subprocess.Popen(command.split())
+    global naoqi_proc
+    naoqi_proc = subprocess.Popen(command.split())
     time.sleep(5)
 
-def make(env_name, sim_port=None, nao_port=None, headless=True, reinit=False):
+def make(env_name, sim_port=None, nao_port=None, headless=True, reinit=False, exit_after_sim=False):
     """
     Launches VREP, Naoqi at specified ports
         arguments:
@@ -89,29 +101,29 @@ def make(env_name, sim_port=None, nao_port=None, headless=True, reinit=False):
     if env_name == 'NaoWalking':
         from nao_rl.environments import NaoWalking
         path = s.SCENES + '/nao_test2.ttt'
-        start_vrep(sim_port, path, headless=headless)
+        start_vrep(sim_port, path, headless=headless, exit_after_sim=exit_after_sim)
         if headless: time.sleep(1.5)
         else: time.sleep(5)
         env = NaoWalking(s.LOCAL_IP, sim_port, nao_port)
-        env.agent.connect(env) # Connect the agent to the environment
+        env.initialize()
 
     elif env_name == 'NaoBalancing':
         from nao_rl.environments import NaoBalancing
         path = s.SCENES + '/nao_test2.ttt'
-        start_vrep(sim_port, path, headless=headless)
+        start_vrep(sim_port, path, headless=headless, exit_after_sim=exit_after_sim)
         if headless: time.sleep(1.5)
         else: time.sleep(5)
         env = NaoBalancing(s.LOCAL_IP, sim_port, nao_port)
-        env.agent.connect(env)
+        env.initialize()
 
     elif env_name == 'NaoTracking':
         from nao_rl.environments import NaoTracking
         path = s.SCENES + '/nao_ball.ttt'
-        start_vrep(sim_port, path, headless=headless)
+        start_vrep(sim_port, path, headless=headless, exit_after_sim=exit_after_sim)
         if headless: time.sleep(1.5)
         else: time.sleep(5)
         env = NaoTracking(s.LOCAL_IP, sim_port, nao_port)
-        env.agent.connect(env)
+        env.initialize()
 
     else:
         raise RuntimeError('No such environment.')

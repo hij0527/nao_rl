@@ -13,9 +13,9 @@ import os, multiprocessing, random
 ### Directories
 
 # Directory of VREP v3.4.0
-VREP_DIR  = '/home/andrius/thesis/software/V-REP_PRO_EDU_V3_4_0_Linux'
+VREP_DIR  = '/opt/V-REP_EDU_V3_6_2'
 # Directory of Choregraphe (optional)
-CHORE_DIR = '/home/andrius/thesis/software/choregraphe/bin'
+CHORE_DIR = '/opt/choregraphe-2.8.6.23/bin'
 
 # Local
 MAIN_DIR       = os.path.dirname(os.path.realpath(__file__))

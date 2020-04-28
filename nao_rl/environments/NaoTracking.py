@@ -21,7 +21,7 @@ class NaoTracking(VrepEnvironment):
     The ball moves randomly within a specified area and the reward is proportional to the distance from
     the center of the ball to the center of NAO's vision sensor.
     """
-    def __init__(self, address=None, port=None, naoqi_port=None, use_real_agent=True):
+    def __init__(self, address=None, port=None, naoqi_port=None, use_real_agent=False):
         VrepEnvironment.__init__(self, address, port)
         # super(NaoTracking, self).__init__(address, port)
 
@@ -56,7 +56,7 @@ class NaoTracking(VrepEnvironment):
 
         # Additional parameters
         self.ball = nao_rl.utils.Ball(name='Sphere1')  # Ball object (defined in ../utils/misc.py)
-        self.ball_color = 'red'
+        self.ball_color = 'green'
         self.show_display = True  # Display the processed image in a cv2 window (object tracking)
 
 
@@ -78,7 +78,7 @@ class NaoTracking(VrepEnvironment):
                        velocities of the head motors]
         """
         image = self.agent.get_image()
-        _, center = nao_rl.utils.ImageProcessor.ball_tracking(image, self.show_display, self.ball_color)
+        _, center = nao_rl.utils.ImageProcessor.ball_tracking(image, display=self.show_display, color=self.ball_color)
         velocities = self.agent.joint_angular_v / self.agent.max_joint_velocity
     
         if center != None:
@@ -148,14 +148,14 @@ class NaoTracking(VrepEnvironment):
 
         return np.array(self.state)
 
-    def run(self):
+    def run(self, timeout=30):
         """
         Run the test simulation without any learning algorithm for debugging purposes
         """
         fps = 30.
         try:
             t = 0
-            while t < 30:
+            while t < timeout:
                 self.done = False
                 self.reset()
                 
@@ -178,6 +178,6 @@ if __name__ == "__main__":
     If called as a script this will initialize the scene in an open vrep instance 
     """
     import nao_rl
-    env = nao_rl.make('NaoTracking', headless=False, show_display=True)
+    env = nao_rl.make('NaoTracking', headless=False)
     env.run()
     nao_rl.destroy_instances()

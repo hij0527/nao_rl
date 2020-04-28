@@ -30,41 +30,44 @@ class ImageProcessor(object):
         Locates a green object in an image and draws a circle around it
         """ 
         if im is None:
+            print('image is None')
             return None, None
-        
 
+        # hsv range
         if color == 'green':
-            lower = (6, 40, 40)
-            upper = (90, 255, 255)
-        if color == 'blue':
-            lower  = (86, 6, 6)
-            upper  = (255, 90, 255)
-        if color == 'red':
-            lower   = (5, 5, 80)
-            upper   = (60, 60, 255)
-        if color == 'wt':
-            lower = (6, 86, 29)
-            upper = (255, 255, 64)
+            lower = (50, 80, 40)
+            upper = (70, 255, 255)
+        elif color == 'blue':
+            lower = (110, 80, 40)
+            upper = (130, 255, 255)
+        elif color == 'red':
+            lower = (0, 80, 40)
+            upper = (10, 255, 255)
+        else:
+            print('unknown color: {}'.format(color))
+            return None, None
+
+        im = np.asarray(im, dtype=np.uint8)
 
         scale = 1
+        small = cv.resize(im, (0, 0), fx=scale, fy=scale)
+        hsv = cv.cvtColor(small, cv.COLOR_RGB2HSV)
 
-        hsv   = cv.cvtColor(np.asarray(im, dtype=np.uint8), cv.COLOR_BGR2HSV)
-        im    = cv.cvtColor(np.asarray(im, dtype=np.uint8), cv.COLOR_RGB2BGR)
-        small = cv.resize(im, (0,0), fx=scale, fy=scale) 
-        
-        # Create a mask for the green areas of the image
-        mask = cv.inRange(small, lower, upper)
+        mask = cv.inRange(hsv, lower, upper)
         # Erosion and dilation to remove imperfections in masking
         mask = cv.erode(mask, None, iterations=2)
         mask = cv.dilate(mask, None, iterations=2)
 
         # Find the contours of masked shapes
+
         contours = cv.findContours(mask.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-        contours = contours[1]
-        center   = None
-        
+        contours = contours[-2]
+        center = None
+
         # If there is a masked object
-        if len(contours) > 0:
+        if contours is None:
+            print('contours is None!')
+        elif len(contours) > 0:
             # Largest contour
             c = max(contours, key=cv.contourArea)
             # Radius
@@ -87,3 +90,4 @@ class ImageProcessor(object):
             key = cv.waitKey(1) & 0xFF
 
         return im, center
+

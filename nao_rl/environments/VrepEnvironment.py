@@ -8,7 +8,7 @@ import gym
 from nao_rl.utils.vrep import vrep
 
 
-class VrepEnv(gym.Env):
+class VrepEnvironment(gym.Env):
     """ 
     Base class for all the Vrep gym environments
     Contains all the basic functions for:
@@ -278,4 +278,4 @@ class VrepEnv(gym.Env):
         collision_status = vrep.simxReadCollision(self.client_id, handle, self.modes['blocking'])[1]
 
         return collision_status
-    
+ 
